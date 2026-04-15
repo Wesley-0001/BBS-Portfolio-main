@@ -1,10 +1,12 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import path from "path";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import path from "node:path";
 import { defineConfig } from "vite";
 import { CONTACT } from "./src/contact";
 
 // GitHub Pages: URL https://<user>.github.io/<repo>/
+// O nome da pasta do repo tem de coincidir com este base (ex.: wes-portifolio).
 export default defineConfig({
   base: "/wes-portifolio/",
   build: {
@@ -20,6 +22,17 @@ export default defineConfig({
           /<meta property="og:url" content="[^"]*"\s*\/>/,
           `<meta property="og:url" content="https://${CONTACT.site}" />`,
         );
+      },
+    },
+    {
+      /** GitHub Pages: rotas client-side voltam a servir o app (evita 404 em refresh). */
+      name: "gh-pages-spa-fallback",
+      closeBundle() {
+        const dist = path.resolve(__dirname, "dist");
+        const indexHtml = path.join(dist, "index.html");
+        if (!existsSync(indexHtml)) return;
+        const html = readFileSync(indexHtml, "utf-8");
+        writeFileSync(path.join(dist, "404.html"), html);
       },
     },
   ],
