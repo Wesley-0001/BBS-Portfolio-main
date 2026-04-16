@@ -1,5 +1,3 @@
-import { WES_3D_PORTFOLIO_URL } from "../contact";
-
 export type ProjectStatus = "live" | "in_progress";
 
 export type Project = {
@@ -19,24 +17,27 @@ export type Project = {
 const projectsData: Project[] = [
   {
     id: "wes-portfolio",
-    title: "wes — portfolio",
+    title: "wes.interface · bbs hub",
     description:
-      "terminal-first interface. projects, stack, contact — minimal product surface.",
+      "Command-driven portfolio surface: a browser CLI for work, stack, and contact—keyboard-first flow, terminal-native by design.",
     category: "web",
-    tags: ["PROJETO REAL", "REACT", "VITE"],
+    tags: ["LIVE", "CLI", "REACT", "VITE"],
     coverImage: "/screenshots/wes-portfolio.jpg",
-    link: WES_3D_PORTFOLIO_URL,
+    link: "https://wesley-0001.github.io/BBS-Portfolio-main/",
     status: "live",
+    accessLabel: "Open live hub",
   },
   {
     id: "termo",
-    title: "TERMO",
+    title: "Termo",
     description:
-      "Portuguese Wordle-style word game — React + TypeScript; ships as a standalone app alongside the portfolio.",
+      "Standalone word game in the browser: tight rounds, terminal-inspired UI—React + TypeScript, shipped as its own lightweight app.",
     category: "game",
-    tags: ["PROJETO REAL", "REACT", "TYPESCRIPT"],
+    tags: ["LIVE", "GAME", "REACT", "TYPESCRIPT"],
     coverImage: "/screenshots/termo.gif",
+    link: "https://wesley-0001.github.io/Termo/",
     status: "live",
+    accessLabel: "Play live",
   },
   {
     id: "barbearia-da-tropa",
