@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { CONTACT, WES_3D_PORTFOLIO_URL } from "./contact";
-import { projects } from "./data/projects";
+import { getProjectHref, projects } from "./data/projects";
 
 type LineVariant =
   | "normal"
@@ -183,13 +183,13 @@ export default function App() {
       { type: "pause", ms: 200 },
       {
         type: "line",
-        text: "\nwelcome to wes experience",
+        text: "\nbooting wes.systems",
         variant: "accent",
         speed: 28,
       },
       {
         type: "line",
-        text: "data. systems. digital product",
+        text: "data · systems · interfaces",
         variant: "muted",
         speed: 28,
       },
@@ -221,7 +221,9 @@ export default function App() {
 
   const handleCommand = (cmd: string) => {
     const trimmed = cmd.trim().toLowerCase();
-    const [command, ...args] = trimmed.split(" ");
+    const parts = trimmed.split(/\s+/).filter(Boolean);
+    const command = parts[0] ?? "";
+    const args = parts.slice(1);
 
     if (command !== "clear") {
       enqueue([{ type: "clear" }]);
@@ -315,12 +317,12 @@ export default function App() {
         ];
         projects.forEach((p, i) => {
           const num = String(i + 1).padStart(2, "0");
-          const title =
-            p.title.length > 36 ? `${p.title.slice(0, 33)}...` : p.title;
-          const padded = title.padEnd(36);
+          const label =
+            p.label.length > 36 ? `${p.label.slice(0, 33)}...` : p.label;
+          const padded = label.padEnd(36);
           portfolioLines.push({
             type: "line",
-            text: `${num}  ${padded} ${p.category}`,
+            text: `${num}  ${padded} ${p.type}`,
             variant: "accent",
             speed: 6,
           });
@@ -351,66 +353,31 @@ export default function App() {
           addLine("usage: open <id>", "error");
           break;
         }
-        const id =
-          /^\d+$/.test(rawId) ? rawId.padStart(2, "0") : rawId.toLowerCase();
-        if (id === "01") {
-          enqueue([
-            {
-              type: "line",
-              text: "opening visual interface...",
-              variant: "info",
-              speed: 18,
-            },
-            { type: "pause", ms: 520 },
-            { type: "open_url", href: WES_3D_PORTFOLIO_URL },
-          ]);
-        } else if (id === "02") {
-          enqueue([
-            {
-              type: "line",
-              text: "TERMO runs as a separate React app (Termo project folder).",
-              variant: "info",
-              speed: 18,
-            },
-            { type: "pause", ms: 400 },
-            {
-              type: "line",
-              text: "open that workspace to play — it is no longer embedded here.",
-              variant: "muted",
-              speed: 14,
-            },
-            {
-              type: "line",
-              text: "\nhome for commands.",
-              variant: "muted",
-              instant: true,
-            },
-          ]);
-        } else if (id === "03") {
-          enqueue([
-            {
-              type: "line",
-              text: "barbearia da tropa — projeto em andamento.",
-              variant: "info",
-              speed: 18,
-            },
-            {
-              type: "line",
-              text: "demo ainda não disponível. acompanhe pelo portfólio visual.",
-              variant: "muted",
-              speed: 14,
-            },
-            { type: "pause", ms: 400 },
-            {
-              type: "line",
-              text: "\nhome for commands.",
-              variant: "muted",
-              instant: true,
-            },
-          ]);
-        } else {
-          addLine(`invalid experience id: ${rawId}`, "error");
+        if (!/^\d+$/.test(rawId)) {
+          addLine("project not found", "error");
+          break;
         }
+        const n = parseInt(rawId, 10);
+        if (n < 1 || n > projects.length) {
+          addLine("project not found", "error");
+          break;
+        }
+        const project = projects[n - 1];
+        const href = getProjectHref(project);
+        if (!href) {
+          addLine("link unavailable", "error");
+          break;
+        }
+        enqueue([
+          {
+            type: "line",
+            text: `opening ${project.label.toLowerCase()}...`,
+            variant: "info",
+            speed: 18,
+          },
+          { type: "pause", ms: 520 },
+          { type: "open_url", href },
+        ]);
         break;
       }
       case "view":
@@ -420,9 +387,11 @@ export default function App() {
           (p, idx) =>
             (!isNaN(searchIdx) && idx + 1 === searchIdx) ||
             p.id === search ||
-            p.title.toLowerCase() === search,
+            p.title.toLowerCase() === search ||
+            p.label.toLowerCase() === search,
         );
         if (project) {
+          const hrefView = getProjectHref(project);
           enqueue([
             {
               type: "line",
@@ -443,7 +412,7 @@ export default function App() {
             },
             {
               type: "line",
-              text: `links: ${project.link ? `[demo: ${project.link}] ` : ""}`,
+              text: `links: ${hrefView ? `[demo: ${hrefView}] ` : ""}`,
               variant: "success",
               instant: true,
             },
@@ -752,22 +721,27 @@ export default function App() {
 
       if (matchFound) continue;
 
-      const sortedProjects = [...projects].sort(
-        (a, b) => b.title.length - a.title.length,
-      );
+      const sortedProjects = [...projects].sort((a, b) => {
+        const la = (a.label ?? a.title).length;
+        const lb = (b.label ?? b.title).length;
+        return lb - la;
+      });
       for (const project of sortedProjects) {
-        const title = project.title;
-        const index = remainingText.toLowerCase().indexOf(title.toLowerCase());
+        const matchStr = project.label ?? project.title;
+        const index = remainingText
+          .toLowerCase()
+          .indexOf(matchStr.toLowerCase());
         if (index === 0) {
-          const matchText = remainingText.substring(0, title.length);
+          const matchText = remainingText.substring(0, matchStr.length);
           elements.push(
             <span
               key={elements.length}
               className="underline decoration-1 underline-offset-4 cursor-pointer hover:opacity-80"
               onClick={(e) => {
                 e.stopPropagation();
-                if (project.link) {
-                  window.open(project.link, "_blank", "noopener,noreferrer");
+                const href = getProjectHref(project);
+                if (href) {
+                  window.open(href, "_blank", "noopener,noreferrer");
                 } else {
                   handleCommand(`view ${project.title}`);
                 }
@@ -776,7 +750,7 @@ export default function App() {
               {matchText}
             </span>,
           );
-          remainingText = remainingText.substring(title.length);
+          remainingText = remainingText.substring(matchStr.length);
           matchFound = true;
           break;
         }
